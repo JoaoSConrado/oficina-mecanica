@@ -40,5 +40,7 @@ management:
         enabled: true
 
 server:
+  # Respeita X-Forwarded-* de proxies (Codespaces, load balancer) para montar URLs corretas
+  forward-headers-strategy: framework
   error:
     include-stacktrace: never
