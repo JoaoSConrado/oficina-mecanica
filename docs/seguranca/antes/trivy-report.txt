@@ -1,0 +1,48 @@
+
+Report Summary
+
+┌────────────┬────────────┬─────────────────┬─────────┬───────────────────┐
+│   Target   │    Type    │ Vulnerabilities │ Secrets │ Misconfigurations │
+├────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ pom.xml    │    pom     │        4        │    -    │         -         │
+├────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ Dockerfile │ dockerfile │        -        │    -    │         0         │
+└────────────┴────────────┴─────────────────┴─────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+For OSS Maintainers: VEX Notice
+--------------------------------
+If you're an OSS maintainer and Trivy has detected vulnerabilities in your project that you believe are not actually exploitable, consider issuing a VEX (Vulnerability Exploitability eXchange) statement.
+VEX allows you to communicate the actual status of vulnerabilities in your project, improving security transparency and reducing false positives for your users.
+Learn more and start using VEX: https://trivy.dev/docs/v0.70/guide/supply-chain/vex/repo#publishing-vex-documents
+
+To disable this notice, set the TRIVY_DISABLE_VEX_NOTICE environment variable.
+
+
+pom.xml (pom)
+=============
+Total: 4 (MEDIUM: 0, HIGH: 4, CRITICAL: 0)
+
+┌───────────────────────────────────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬────────────────────────────────────────────────────────────┐
+│                        Library                        │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │                           Title                            │
+├───────────────────────────────────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼────────────────────────────────────────────────────────────┤
+│ org.postgresql:postgresql                             │ CVE-2026-42198 │ HIGH     │ fixed  │ 42.7.8            │ 42.7.11       │ jdbc.postgresql.org: pgjdbc: Client-side Denial of Service │
+│                                                       │                │          │        │                   │               │ via malicious SCRAM-SHA-256 authentication                 │
+│                                                       │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2026-42198                 │
+│                                                       ├────────────────┤          │        │                   ├───────────────┼────────────────────────────────────────────────────────────┤
+│                                                       │ CVE-2026-54291 │          │        │                   │ 42.7.12       │ org.postgresql/postgresql: com.ongres.scram/scram-client:  │
+│                                                       │                │          │        │                   │               │ pgjdbc: Man-in-the-middle protection bypass via            │
+│                                                       │                │          │        │                   │               │ SCRAM-SHA-256-PLUS downgrade                               │
+│                                                       │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2026-54291                 │
+├───────────────────────────────────────────────────────┼────────────────┤          │        ├───────────────────┼───────────────┼────────────────────────────────────────────────────────────┤
+│ org.springframework.boot:spring-boot-starter-actuator │ CVE-2026-22731 │          │        │ 3.5.7             │ 3.5.12, 4.0.4 │ Spring Boot: Spring Boot: Authentication bypass via        │
+│                                                       │                │          │        │                   │               │ misconfigured Health Group additional path...              │
+│                                                       │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2026-22731                 │
+│                                                       ├────────────────┤          │        │                   ├───────────────┼────────────────────────────────────────────────────────────┤
+│                                                       │ CVE-2026-22733 │          │        │                   │ 4.0.4, 3.5.12 │ Spring Boot has an Authentication Bypass under Actuator    │
+│                                                       │                │          │        │                   │               │ CloudFoundry endpoints                                     │
+│                                                       │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2026-22733                 │
+└───────────────────────────────────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴────────────────────────────────────────────────────────────┘
