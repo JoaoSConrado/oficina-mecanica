@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Diagramas — Oficina Mecânica</title>
+<style>
+  @page { size: 297mm 210mm; margin: 10mm; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #1f2328; background: #fff;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pagina { page-break-after: always; break-after: page; padding: 2mm; }
+  .pagina:last-of-type { page-break-after: auto; break-after: auto; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  h2 { font-size: 19px; margin: 0 0 2px; }
+  .sub { color: #57606a; font-size: 12.5px; margin: 0 0 10px; }
+  .diagrama { display: block; text-align: center; }
+  .diagrama svg { width: 100%; max-width: 100% !important; height: auto; max-height: 145mm; }
+  ul { font-size: 13px; margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<section class="pagina">
+  <h1>Diagramas — Sistema Integrado de Atendimento da Oficina Mecânica</h1>
+  <p class="sub">Tech Challenge · Fase 1 · SOAT — Grupo 115</p>
+  <h2>1 · Arquitetura do monólito em camadas</h2>
+  <p class="sub">As dependências apontam para o domínio. As regras de negócio ficam nos agregados; a camada de aplicação orquestra casos de uso e transações.</p>
+  <div class="diagrama"><pre class="mermaid">
+flowchart LR
+    cliente([Cliente / App]) -->|"HTTPS /api/public/** (CPF/CNPJ)"| api
+    equipe([Equipe da oficina]) -->|"HTTPS /api/** (JWT)"| api
+    subgraph app [Monólito Spring Boot]
+        direction TB
+        api["api<br/>Controllers REST · GlobalExceptionHandler (RFC 7807)"]
+        appl["application<br/>Casos de uso · DTOs · @Transactional"]
+        dom["domain<br/>Agregados · Objetos de valor · Regras · Repositórios"]
+        infra["infrastructure<br/>Segurança JWT · Swagger · Notificação · Config"]
+        api --> appl --> dom
+        infra -.-> api
+        infra -.->|implementa NotificadorCliente| appl
+    end
+    dom -->|"JPA / Hibernate + Flyway"| db[(PostgreSQL 17)]
+  </pre></div>
+</section>
+
+<section class="pagina">
+  <h2>2 · Mapa de contextos (Bounded Contexts)</h2>
+  <p class="sub">Atendimento é o núcleo; os demais contextos o abastecem. No MVP monolítico a integração é por chamada direta entre serviços de aplicação.</p>
+  <div class="diagrama"><pre class="mermaid">
+flowchart LR
+    subgraph AT [Atendimento · núcleo]
+        OS[Ordem de Serviço<br/>itens · orçamento · status · histórico]
+    end
+    subgraph CAD [Clientes e Veículos · suporte]
+        C[Cliente<br/>Documento CPF/CNPJ]
+        V[Veículo<br/>Placa]
+        V --> C
+    end
+    subgraph CAT [Catálogo e Estoque · suporte]
+        S[Serviço]
+        P[Peça / Insumo<br/>saldo · mínimo]
+    end
+    subgraph IA [Identidade e Acesso · genérico]
+        J[JWT · Usuário admin]
+    end
+    OS -->|identifica por CPF/CNPJ| C
+    OS -->|localiza ou cadastra por placa| V
+    OS -->|inclui com preço congelado| S
+    OS -->|inclui e baixa na aprovação| P
+    J -.->|protege APIs administrativas| AT
+    J -.-> CAD
+    J -.-> CAT
+  </pre></div>
+</section>
+
+<section class="pagina">
+  <h2>3 · Agregados, entidades e objetos de valor</h2>
+  <p class="sub">OrdemServico é a raiz do agregado principal: itens e histórico só mudam por ela. Documento e Placa são objetos de valor imutáveis, validados na criação.</p>
+  <div class="diagrama"><pre class="mermaid">
+classDiagram
+    direction LR
+    class OrdemServico {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        UUID id
+        StatusOrdemServico status
+        BigDecimal valorOrcamento
+        DecisaoOrcamento decisaoOrcamento
+        Instant criadaEm
+        Instant execucaoIniciadaEm
+        Instant finalizadaEm
+        abrir()
+        adicionarServico()
+        adicionarPeca()
+        enviarOrcamento()
+        aprovarOrcamento()
+        rejeitarOrcamento()
+        finalizar()
+        entregar()
+        calcularTotal()
+    }
+    class ItemServicoOS {
+        &lt;&lt;Entity&gt;&gt;
+        int quantidade
+        BigDecimal precoUnitario
+    }
+    class ItemPecaOS {
+        &lt;&lt;Entity&gt;&gt;
+        int quantidade
+        BigDecimal precoUnitario
+    }
+    class HistoricoStatus {
+        &lt;&lt;Entity&gt;&gt;
+        StatusOrdemServico anterior
+        StatusOrdemServico novo
+        Instant ocorridoEm
+    }
+    class Cliente {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        String nome
+        String email
+    }
+    class Veiculo {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        String marca
+        String modelo
+        int ano
+        pertenceA()
+    }
+    class Servico {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        String nome
+        BigDecimal preco
+        boolean ativo
+    }
+    class Peca {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        String codigo
+        TipoPeca tipo
+        int quantidadeEstoque
+        int estoqueMinimo
+        darBaixa()
+        repor()
+    }
+    class Documento {
+        &lt;&lt;ValueObject&gt;&gt;
+        String numero
+        TipoDocumento tipo
+    }
+    class Placa {
+        &lt;&lt;ValueObject&gt;&gt;
+        String valor
+    }
+    OrdemServico "1" *-- "*" ItemServicoOS
+    OrdemServico "1" *-- "*" ItemPecaOS
+    OrdemServico "1" *-- "*" HistoricoStatus
+    OrdemServico --> Cliente
+    OrdemServico --> Veiculo
+    ItemServicoOS --> Servico
+    ItemPecaOS --> Peca
+    Veiculo --> Cliente
+    Cliente *-- Documento
+    Veiculo *-- Placa
+  </pre></div>
+</section>
+
+<section class="pagina">
+  <h2>4 · Ciclo de vida da Ordem de Serviço</h2>
+  <p class="sub">Transições validadas em StatusOrdemServico.proximosPermitidos(); qualquer outra transição é recusada (HTTP 422). Cada transição gera um HistoricoStatus.</p>
+  <div class="diagrama"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> Recebida: Abrir OS
+    Recebida --> EmDiagnostico: Iniciar diagnóstico / incluir 1º item
+    EmDiagnostico --> AguardandoAprovacao: Enviar orçamento (≥ 1 item)
+    AguardandoAprovacao --> EmExecucao: Aprovar (baixa estoque)
+    AguardandoAprovacao --> Finalizada: Rejeitar (sem execução)
+    EmExecucao --> Finalizada: Finalizar
+    Finalizada --> Entregue: Entregar veículo
+    Entregue --> [*]
+    EmDiagnostico: Em diagnóstico
+    AguardandoAprovacao: Aguardando aprovação
+    EmExecucao: Em execução
+  </pre></div>
+</section>
+
+<section class="pagina">
+  <h2>5 · Sequência: aprovação do orçamento pelo cliente</h2>
+  <p class="sub">Uma única transação: se faltar estoque ou houver alteração concorrente da peça, nada é gravado.</p>
+  <div class="diagrama"><pre class="mermaid">
+sequenceDiagram
+    actor Cliente
+    participant API as AcompanhamentoController
+    participant UC as OrdemServicoService
+    participant OS as OrdemServico
+    participant P as Peca
+    participant DB as PostgreSQL
+    Cliente->>API: POST /api/public/ordens-servico/{id}/orcamento/aprovacao {documento}
+    API->>UC: aprovarPeloCliente(id, documento)
+    Note over UC,DB: @Transactional
+    UC->>DB: buscar OS
+    UC->>OS: pertenceAoCliente(documento)?
+    alt documento de outra pessoa
+        UC-->>API: 404 OS não encontrada
+    else titular
+        UC->>OS: aprovarOrcamento(agora)
+        OS->>P: darBaixa(quantidade) para cada peça
+        alt estoque insuficiente
+            P-->>UC: RegraNegocioException
+            UC-->>API: 422 e rollback
+        else ok
+            OS->>OS: status = Em execução + histórico
+            UC->>DB: commit (version da Peça e da OS)
+            UC-->>API: 200 OS em execução
+        end
+    end
+    API-->>Cliente: resposta
+  </pre></div>
+</section>
+
+<section class="pagina">
+  <h2>6 · Modelo de dados (PostgreSQL)</h2>
+  <p class="sub">Criado pelo Flyway (V1__estrutura_inicial.sql). Restrições garantem CPF/CNPJ e placa únicos e estoque nunca negativo.</p>
+  <div class="diagrama"><pre class="mermaid">
+erDiagram
+    clientes ||--o{ veiculos : possui
+    clientes ||--o{ ordens_servico : solicita
+    veiculos ||--o{ ordens_servico : atendido_em
+    ordens_servico ||--o{ itens_servico_os : contem
+    ordens_servico ||--o{ itens_peca_os : contem
+    ordens_servico ||--o{ historico_status_os : registra
+    servicos ||--o{ itens_servico_os : referenciado
+    pecas ||--o{ itens_peca_os : referenciada
+    clientes {
+        uuid id PK
+        varchar documento UK
+        varchar tipo_documento
+        varchar nome
+    }
+    veiculos {
+        uuid id PK
+        varchar placa UK
+        uuid cliente_id FK
+        varchar marca
+        varchar modelo
+        int ano
+    }
+    ordens_servico {
+        uuid id PK
+        uuid cliente_id FK
+        uuid veiculo_id FK
+        varchar status
+        numeric valor_orcamento
+        varchar decisao_orcamento
+        timestamptz execucao_iniciada_em
+        timestamptz finalizada_em
+        bigint version
+    }
+    itens_servico_os {
+        uuid id PK
+        uuid ordem_servico_id FK
+        uuid servico_id FK
+        int quantidade
+        numeric preco_unitario
+    }
+    itens_peca_os {
+        uuid id PK
+        uuid ordem_servico_id FK
+        uuid peca_id FK
+        int quantidade
+        numeric preco_unitario
+    }
+    historico_status_os {
+        uuid id PK
+        uuid ordem_servico_id FK
+        varchar status_anterior
+        varchar status_novo
+        timestamptz ocorrido_em
+    }
+    servicos {
+        uuid id PK
+        varchar nome
+        numeric preco
+        boolean ativo
+    }
+    pecas {
+        uuid id PK
+        varchar codigo UK
+        varchar tipo
+        int quantidade_estoque
+        int estoque_minimo
+        bigint version
+    }
+  </pre></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "default", securityLevel: "loose",
+    flowchart: { htmlLabels: true }, er: { layoutDirection: "LR" } });
+</script>
+</body>
+</html>

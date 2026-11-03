@@ -1,7 +1,7 @@
 # Modelo de Domínio (DDD)
 
-> Base para montar o Event Storming no Miro. Depois de montado, exporte para
-> `docs/ddd/event-storming.pdf` e `docs/ddd/diagramas.pdf`, como pede o enunciado.
+> Versões visuais: [event-storming.pdf](event-storming.pdf) (quadro de Event Storming) e
+> [diagramas.pdf](diagramas.pdf) (arquitetura, contextos, agregados, estados, sequência e dados).
 
 ## Bounded Contexts
 

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Event Storming — Oficina Mecânica</title>
+<style>
+  @page { size: 420mm 297mm; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #1f2328; background: #fff;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pagina { page-break-after: always; break-after: page; padding: 4mm 2mm; }
+  .pagina:last-child { page-break-after: auto; break-after: auto; }
+  h1 { font-size: 26px; margin: 0 0 2px; }
+  h2 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: #57606a; font-size: 13px; margin: 0 0 14px; }
+  .linha-do-tempo { display: flex; align-items: center; gap: 6px; color: #57606a; font-size: 12px; margin: 0 0 10px; }
+  .linha-do-tempo .seta { flex: 1; border-top: 2px dashed #8c959f; position: relative; }
+  .linha-do-tempo .seta::after { content: "▶"; position: absolute; right: -6px; top: -9px; font-size: 12px; color: #8c959f; }
+  .quadro { display: grid; gap: 10px; align-items: start; }
+  .passo { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 7px; min-height: 100%; }
+  .passo .num { font-size: 11px; font-weight: 700; color: #57606a; }
+  .nota { border-radius: 3px; padding: 7px 8px; font-size: 12.5px; line-height: 1.3; box-shadow: 1px 2px 3px rgba(0,0,0,.18); }
+  .nota small { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; margin-bottom: 2px; font-weight: 700; }
+  .ator     { background: #fff59d; }
+  .comando  { background: #90caf9; }
+  .agregado { background: #ffe0b2; border: 1px solid #e0a96d; }
+  .evento   { background: #ffab40; font-weight: 600; }
+  .politica { background: #ce93d8; }
+  .leitura  { background: #a5d6a7; }
+  .externo  { background: #f48fb1; }
+  .hotspot  { background: #ef5350; color: #fff; }
+  .legenda { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 14px; }
+  .legenda .nota { width: 170px; }
+  .grade-contextos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .contexto { border: 2px solid #8c959f; border-radius: 10px; padding: 10px 12px; }
+  .contexto h3 { margin: 0 0 4px; font-size: 16px; }
+  .contexto p { margin: 0 0 6px; font-size: 13px; color: #424a53; }
+  .contexto .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; background: #ddf4ff; color: #0969da; margin-right: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid #d0d7de; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; }
+  .rodape { margin-top: 10px; font-size: 11px; color: #8c959f; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ CAPA / LEGENDA -->
+<section class="pagina">
+  <h1>Event Storming — Sistema Integrado de Atendimento da Oficina Mecânica</h1>
+  <p class="sub">Tech Challenge · Fase 1 · SOAT — Grupo 115 · Fluxos: criação da OS, acompanhamento da OS e gestão de peças e insumos</p>
+
+  <h2>Legenda</h2>
+  <div class="legenda">
+    <div class="nota ator"><small>Ator</small>Quem dispara a ação</div>
+    <div class="nota comando"><small>Comando</small>Intenção / ação no sistema</div>
+    <div class="nota agregado"><small>Agregado</small>Quem garante as regras</div>
+    <div class="nota evento"><small>Evento de domínio</small>Fato que aconteceu (passado)</div>
+    <div class="nota politica"><small>Política / regra</small>"Quando… então…" / invariante</div>
+    <div class="nota leitura"><small>Modelo de leitura</small>Informação consultada</div>
+    <div class="nota externo"><small>Sistema externo</small>Canal fora do domínio</div>
+    <div class="nota hotspot"><small>Hotspot</small>Dúvida / decisão tomada</div>
+  </div>
+
+  <h2>Atores</h2>
+  <table>
+    <tr><th>Ator</th><th>Papel</th><th>Acesso</th></tr>
+    <tr><td>Atendente</td><td>Recebe o veículo, abre a OS, envia o orçamento, registra entrega</td><td>API administrativa (JWT)</td></tr>
+    <tr><td>Mecânico</td><td>Faz o diagnóstico, inclui serviços e peças, executa e finaliza</td><td>API administrativa (JWT)</td></tr>
+    <tr><td>Estoquista</td><td>Cadastra peças/insumos e movimenta o estoque</td><td>API administrativa (JWT)</td></tr>
+    <tr><td>Gestor</td><td>Acompanha a fila de atendimento e o tempo médio de execução</td><td>API administrativa (JWT)</td></tr>
+    <tr><td>Cliente</td><td>Acompanha a OS e aprova ou rejeita o orçamento</td><td>API pública, identificado por CPF/CNPJ</td></tr>
+  </table>
+
+  <h2 style="margin-top:16px">Bounded Contexts identificados</h2>
+  <div class="grade-contextos">
+    <div class="contexto"><h3>Atendimento <span class="tag">núcleo</span></h3>
+      <p>Ciclo de vida da Ordem de Serviço: abertura, diagnóstico, orçamento, aprovação, execução, entrega e acompanhamento.</p>
+      <p><b>Agregado:</b> OrdemServico (ItemServicoOS, ItemPecaOS, HistoricoStatus)</p></div>
+    <div class="contexto"><h3>Cadastro de Clientes e Veículos <span class="tag">suporte</span></h3>
+      <p>Identificação do cliente por CPF/CNPJ e do veículo por placa.</p>
+      <p><b>Agregados:</b> Cliente (Documento), Veiculo (Placa)</p></div>
+    <div class="contexto"><h3>Catálogo e Estoque <span class="tag">suporte</span></h3>
+      <p>Serviços oferecidos, peças e insumos, saldo e estoque mínimo.</p>
+      <p><b>Agregados:</b> Servico, Peca</p></div>
+    <div class="contexto"><h3>Identidade e Acesso <span class="tag">genérico</span></h3>
+      <p>Autenticação JWT da equipe administrativa.</p>
+      <p><b>Implementação:</b> infrastructure.security</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ FLUXO 1 -->
+<section class="pagina">
+  <h2>1 · Criação da Ordem de Serviço</h2>
+  <p class="sub">Contextos: Atendimento + Cadastro + Catálogo e Estoque</p>
+  <div class="linha-do-tempo">tempo<span class="seta"></span></div>
+  <div class="quadro" style="grid-template-columns: repeat(6, 1fr);">
+    <div class="passo"><span class="num">PASSO 1</span>
+      <div class="nota ator"><small>Ator</small>Atendente</div>
+      <div class="nota comando"><small>Comando</small>Abrir OS (CPF/CNPJ + placa + descrição do problema)</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Cliente deve existir (identificado por CPF/CNPJ válido)</div>
+      <div class="nota politica"><small>Política</small>Veículo deve pertencer ao cliente</div>
+      <div class="nota evento"><small>Evento</small>OS Aberta (status Recebida)</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 2 (alternativo)</span>
+      <div class="nota ator"><small>Ator</small>Atendente</div>
+      <div class="nota comando"><small>Comando</small>Cadastrar veículo na abertura</div>
+      <div class="nota agregado"><small>Agregado</small>Veiculo</div>
+      <div class="nota politica"><small>Política</small>Placa nova exige marca, modelo e ano; placa no padrão antigo ou Mercosul e única</div>
+      <div class="nota evento"><small>Evento</small>Veículo Cadastrado</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 3</span>
+      <div class="nota ator"><small>Ator</small>Mecânico</div>
+      <div class="nota comando"><small>Comando</small>Iniciar diagnóstico</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Incluir o 1º item numa OS Recebida inicia o diagnóstico automaticamente</div>
+      <div class="nota evento"><small>Evento</small>Diagnóstico Iniciado</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 4</span>
+      <div class="nota ator"><small>Ator</small>Mecânico</div>
+      <div class="nota leitura"><small>Leitura</small>Catálogo de serviços ativos</div>
+      <div class="nota comando"><small>Comando</small>Incluir serviço</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Serviço ativo; preço congelado na inclusão; mesmo serviço soma quantidade</div>
+      <div class="nota evento"><small>Evento</small>Serviço Incluído</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 5</span>
+      <div class="nota ator"><small>Ator</small>Mecânico</div>
+      <div class="nota leitura"><small>Leitura</small>Saldo de estoque</div>
+      <div class="nota comando"><small>Comando</small>Incluir peça / insumo</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Saldo suficiente no estoque; peça ativa</div>
+      <div class="nota evento"><small>Evento</small>Peça Incluída</div>
+      <div class="nota hotspot"><small>Hotspot (decidido)</small>Estoque só é baixado na aprovação, não na inclusão</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 6</span>
+      <div class="nota ator"><small>Ator</small>Atendente</div>
+      <div class="nota comando"><small>Comando</small>Enviar orçamento</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Exige ao menos um item; valor calculado e congelado; itens bloqueados</div>
+      <div class="nota evento"><small>Evento</small>Orçamento Enviado (Aguardando aprovação)</div>
+      <div class="nota politica"><small>Política</small>Quando o orçamento é enviado, notificar o cliente</div>
+      <div class="nota externo"><small>Externo</small>Notificação ao cliente</div>
+    </div>
+  </div>
+  <p class="rodape">Código: OrdemServico.abrir(), adicionarServico(), adicionarPeca(), iniciarDiagnostico(), enviarOrcamento() · OrdemServicoService.abrir() · NotificadorCliente</p>
+</section>
+
+<!-- ============================================================ FLUXO 2 -->
+<section class="pagina">
+  <h2>2 · Acompanhamento da Ordem de Serviço</h2>
+  <p class="sub">Contexto: Atendimento (com baixa no Catálogo e Estoque)</p>
+  <div class="linha-do-tempo">tempo<span class="seta"></span></div>
+  <div class="quadro" style="grid-template-columns: repeat(6, 1fr);">
+    <div class="passo"><span class="num">PASSO 1</span>
+      <div class="nota ator"><small>Ator</small>Cliente</div>
+      <div class="nota leitura"><small>Leitura</small>Andamento da OS: status, orçamento, itens e histórico</div>
+      <div class="nota politica"><small>Política</small>Só o titular (mesmo CPF/CNPJ) enxerga a OS; outro documento recebe "não encontrada"</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 2a</span>
+      <div class="nota ator"><small>Ator</small>Cliente (ou Atendente, por telefone)</div>
+      <div class="nota comando"><small>Comando</small>Aprovar orçamento</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico + Peca</div>
+      <div class="nota evento"><small>Evento</small>Orçamento Aprovado</div>
+      <div class="nota politica"><small>Política</small>Quando aprovado, dar baixa nas peças (transação única; saldo protegido por versão)</div>
+      <div class="nota evento"><small>Evento</small>Estoque Baixado</div>
+      <div class="nota evento"><small>Evento</small>Execução Iniciada</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 2b (alternativo)</span>
+      <div class="nota ator"><small>Ator</small>Cliente (ou Atendente)</div>
+      <div class="nota comando"><small>Comando</small>Rejeitar orçamento (com motivo)</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota evento"><small>Evento</small>Orçamento Rejeitado</div>
+      <div class="nota politica"><small>Política</small>Rejeição encerra a OS sem execução e sem baixa de estoque</div>
+      <div class="nota evento"><small>Evento</small>OS Finalizada</div>
+      <div class="nota hotspot"><small>Hotspot (decidido)</small>Rejeitada → Finalizada; o veículo fica disponível para retirada</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 3</span>
+      <div class="nota ator"><small>Ator</small>Mecânico</div>
+      <div class="nota comando"><small>Comando</small>Finalizar serviços</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Somente a partir de Em execução</div>
+      <div class="nota evento"><small>Evento</small>OS Finalizada (tempo de execução registrado)</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 4</span>
+      <div class="nota ator"><small>Ator</small>Atendente</div>
+      <div class="nota comando"><small>Comando</small>Entregar veículo</div>
+      <div class="nota agregado"><small>Agregado</small>OrdemServico</div>
+      <div class="nota politica"><small>Política</small>Somente a partir de Finalizada</div>
+      <div class="nota evento"><small>Evento</small>Veículo Entregue</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 5</span>
+      <div class="nota ator"><small>Ator</small>Gestor</div>
+      <div class="nota leitura"><small>Leitura</small>Fila de atendimento: Em execução › Aguardando aprovação › Em diagnóstico › Recebida; mais antigas primeiro</div>
+      <div class="nota leitura"><small>Leitura</small>Tempo médio de execução, geral e por serviço</div>
+      <div class="nota politica"><small>Política</small>Toda mudança de status gera registro no histórico e notificação ao cliente</div>
+    </div>
+  </div>
+  <p class="rodape">Código: OrdemServico.aprovarOrcamento(), rejeitarOrcamento(), finalizar(), entregar() · StatusOrdemServico.proximosPermitidos() · AcompanhamentoController · MetricasService</p>
+</section>
+
+<!-- ============================================================ FLUXO 3 -->
+<section class="pagina">
+  <h2>3 · Gestão de peças e insumos</h2>
+  <p class="sub">Contexto: Catálogo e Estoque</p>
+  <div class="linha-do-tempo">tempo<span class="seta"></span></div>
+  <div class="quadro" style="grid-template-columns: repeat(6, 1fr);">
+    <div class="passo"><span class="num">PASSO 1</span>
+      <div class="nota ator"><small>Ator</small>Estoquista</div>
+      <div class="nota comando"><small>Comando</small>Cadastrar peça ou insumo (código, tipo, preço, saldo inicial, mínimo)</div>
+      <div class="nota agregado"><small>Agregado</small>Peca</div>
+      <div class="nota politica"><small>Política</small>Código único; preço e quantidades não negativos</div>
+      <div class="nota evento"><small>Evento</small>Peça Cadastrada</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 2</span>
+      <div class="nota ator"><small>Ator</small>Estoquista</div>
+      <div class="nota comando"><small>Comando</small>Registrar entrada (reposição)</div>
+      <div class="nota agregado"><small>Agregado</small>Peca</div>
+      <div class="nota politica"><small>Política</small>Quantidade maior que zero</div>
+      <div class="nota evento"><small>Evento</small>Estoque Reposto</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 3</span>
+      <div class="nota ator"><small>Ator</small>Estoquista</div>
+      <div class="nota comando"><small>Comando</small>Registrar saída manual (perda, uso interno)</div>
+      <div class="nota agregado"><small>Agregado</small>Peca</div>
+      <div class="nota politica"><small>Política</small>Saldo nunca fica negativo</div>
+      <div class="nota evento"><small>Evento</small>Estoque Baixado</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 4</span>
+      <div class="nota ator"><small>Ator</small>Sistema (aprovação de OS)</div>
+      <div class="nota evento"><small>Evento</small>Orçamento Aprovado</div>
+      <div class="nota politica"><small>Política</small>Quando o orçamento é aprovado, baixar as peças da OS</div>
+      <div class="nota agregado"><small>Agregado</small>Peca</div>
+      <div class="nota evento"><small>Evento</small>Estoque Baixado</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 5</span>
+      <div class="nota politica"><small>Política</small>Quando saldo ≤ estoque mínimo, sinalizar reposição</div>
+      <div class="nota evento"><small>Evento</small>Estoque Abaixo do Mínimo</div>
+      <div class="nota ator"><small>Ator</small>Estoquista</div>
+      <div class="nota leitura"><small>Leitura</small>Peças abaixo do mínimo</div>
+    </div>
+    <div class="passo"><span class="num">PASSO 6</span>
+      <div class="nota ator"><small>Ator</small>Estoquista</div>
+      <div class="nota comando"><small>Comando</small>Atualizar / desativar peça</div>
+      <div class="nota agregado"><small>Agregado</small>Peca</div>
+      <div class="nota politica"><small>Política</small>Exclusão lógica: OS antigas continuam referenciando a peça</div>
+      <div class="nota evento"><small>Evento</small>Peça Atualizada / Desativada</div>
+    </div>
+  </div>
+  <p class="rodape">Código: Peca.repor(), darBaixa(), isAbaixoDoMinimo(), desativar() · PecaService · PecaController (/api/pecas, /estoque/entrada, /estoque/saida)</p>
+</section>
+
+</body>
+</html>
