@@ -13,7 +13,9 @@ RUN mvn -B -q package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-RUN addgroup -S oficina && adduser -S oficina -G oficina
+# Aplica as correções de segurança disponíveis nos pacotes da imagem base
+RUN apk upgrade --no-cache \
+    && addgroup -S oficina && adduser -S oficina -G oficina
 COPY --from=build /app/target/oficina-mecanica.jar app.jar
 USER oficina
 
