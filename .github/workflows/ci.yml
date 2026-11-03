@@ -53,3 +53,14 @@ jobs:
         with:
           name: relatorio-vulnerabilidades
           path: trivy-*.txt
+      - name: Resumo no job
+        if: always()
+        run: |
+          for arquivo in trivy-report.txt trivy-imagem.txt; do
+            [ -f "$arquivo" ] || continue
+            echo "### $arquivo" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            if [ -s "$arquivo" ]; then cat "$arquivo" >> "$GITHUB_STEP_SUMMARY"; else echo "Nenhum achado nas severidades analisadas." >> "$GITHUB_STEP_SUMMARY"; fi
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
+          cat trivy-*.txt 2>/dev/null || true
