@@ -38,6 +38,18 @@ da imagem base Alpine.
 
 Os 74 testes automatizados continuam passando após as atualizações, com a cobertura mínima atendida.
 
+## 2ª análise (após as correções) — [trivy-report.txt](trivy-report.txt), [trivy-imagem.txt](trivy-imagem.txt)
+
+| Alvo | Crítica | Alta | Média | Antes |
+|---|---|---|---|---|
+| `pom.xml` (dependências) | 0 | 0 | 0 | 4 altas |
+| Dockerfile (configuração) | 0 achados | | | 0 |
+| Segredos no repositório | 0 achados | | | 0 |
+| Imagem: pacotes Alpine | 0 | 0 | — | 2 altas |
+| Imagem: bibliotecas do `app.jar` | 2 | 0 | — | 9 críticas, 25 altas |
+
+De 40 achados para 2, ambos detalhados abaixo como risco residual aceito.
+
 ## Riscos residuais aceitos
 
 | CVE | Componente | Motivo |
