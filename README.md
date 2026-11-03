@@ -43,10 +43,21 @@ infrastructure (segurança JWT, Swagger, notificação, configuração)
 - Erros seguem o padrão RFC 7807 (`application/problem+json`): 400 dado inválido, 404 não encontrado,
   409 conflito, 422 regra de negócio.
 
-Documentação DDD: [docs/ddd/modelo-de-dominio.md](docs/ddd/modelo-de-dominio.md) (bounded contexts,
-agregados, máquina de estados, Event Storming) e [docs/ddd/linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md).
+## Documentação DDD e vídeo
 
-> Link do Miro: _adicionar aqui_ · Vídeo da entrega: _adicionar aqui_
+Documentação DDD (acesso público, sem pedir permissão):
+https://github.com/JoaoSConrado/oficina-mecanica/tree/main/docs/ddd
+
+| Documento | Conteúdo |
+|---|---|
+| [event-storming.pdf](docs/ddd/event-storming.pdf) | Atores, bounded contexts e Event Storming dos fluxos de criação da OS, acompanhamento da OS e gestão de peças e insumos |
+| [diagramas.pdf](docs/ddd/diagramas.pdf) | Arquitetura em camadas, mapa de contextos, agregados, ciclo de vida da OS, sequência da aprovação e modelo de dados |
+| [modelo-de-dominio.md](docs/ddd/modelo-de-dominio.md) | Eventos, comandos, políticas, agregados, entidades, objetos de valor e relação com o código |
+| [linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md) | Linguagem ubíqua e glossário |
+
+As fontes dos PDFs ficam em `docs/ddd/fontes/` e são regeneradas com `.\docs\ddd\fontes\gerar-pdfs.ps1`.
+
+Vídeo da entrega: _link adicionado após a gravação_
 
 ## Tecnologias
 
@@ -146,7 +157,7 @@ Relatório: `target/site/jacoco/index.html`.
 - **Local**: `./mvnw -Pseguranca verify` roda o OWASP Dependency-Check e grava o relatório em
   `docs/seguranca/` (recomenda-se definir `NVD_API_KEY` para acelerar o download da base).
 
-Salve o relatório final em `docs/seguranca/` para a entrega.
+O resultado da análise usada na entrega está em [docs/seguranca](docs/seguranca).
 
 ## Estrutura do projeto
 
