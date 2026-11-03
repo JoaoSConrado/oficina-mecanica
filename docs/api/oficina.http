@@ -1,0 +1,79 @@
+### Coleção de requisições (IntelliJ HTTP Client / extensão REST Client do VS Code)
+@base = http://localhost:8080
+
+### 1. Login (copie o token retornado)
+# @name login
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{ "usuario": "admin", "senha": "admin123" }
+
+###
+@token = {{login.response.body.token}}
+
+### 2. Cadastrar cliente
+POST {{base}}/api/clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "nome": "Maria da Silva", "documento": "529.982.247-25", "email": "maria@email.com", "telefone": "11999998888" }
+
+### 3. Catálogo de serviços e peças
+GET {{base}}/api/servicos
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/pecas
+Authorization: Bearer {{token}}
+
+### 4. Abrir OS (veículo é cadastrado se a placa for nova)
+# @name abrir
+POST {{base}}/api/ordens-servico
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentoCliente": "52998224725",
+  "veiculo": { "placa": "BRA2E19", "marca": "Volkswagen", "modelo": "Gol", "ano": 2020 },
+  "descricaoProblema": "Troca de óleo e barulho ao frear",
+  "servicos": [
+    { "id": "a1f2c3d4-0001-4000-8000-000000000001", "quantidade": 1 },
+    { "id": "a1f2c3d4-0001-4000-8000-000000000004", "quantidade": 1 }
+  ],
+  "pecas": [
+    { "id": "b2e3d4f5-0002-4000-8000-000000000001", "quantidade": 4 },
+    { "id": "b2e3d4f5-0002-4000-8000-000000000003", "quantidade": 1 }
+  ]
+}
+
+###
+@os = {{abrir.response.body.id}}
+
+### 5. Enviar orçamento ao cliente
+POST {{base}}/api/ordens-servico/{{os}}/orcamento/envio
+Authorization: Bearer {{token}}
+
+### 6. Cliente acompanha (sem token)
+GET {{base}}/api/public/ordens-servico/{{os}}?documento=529.982.247-25
+
+### 7. Cliente aprova (sem token) -> baixa estoque e inicia execução
+POST {{base}}/api/public/ordens-servico/{{os}}/orcamento/aprovacao
+Content-Type: application/json
+
+{ "documento": "529.982.247-25" }
+
+### 8. Finalizar e entregar
+POST {{base}}/api/ordens-servico/{{os}}/finalizacao
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/ordens-servico/{{os}}/entrega
+Authorization: Bearer {{token}}
+
+### 9. Fila de atendimento e métricas
+GET {{base}}/api/ordens-servico?incluirEncerradas=true
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/ordens-servico/metricas/tempo-medio
+Authorization: Bearer {{token}}
